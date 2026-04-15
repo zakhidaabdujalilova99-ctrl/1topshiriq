@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3.js Integration | 1-Topshiriq</title>
+    <!-- Web3.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@4.8.0/dist/web3.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav>
+        <div class="logo">
+            <i data-lucide="boxes"></i> Web3<span>DApp</span>
+        </div>
+        <button id="connectBtn" class="btn btn-outline" onclick="connectWallet()">
+            Hamyonni Ulash
+        </button>
+    </nav>
+
+    <div class="container">
+        
+        <div class="header-section">
+            <h1>Web3.js va MetaMask bilan ishlash</h1>
+            <p>Ushbu loyiha orqali siz Localhost tarmog'ini MetaMask-ga qanday ulashni va smart-kontrakt bilan <code>view</code> va <code>send</code> metodlarida ishlashni ko'rib chiqasiz.</p>
+        </div>
+
+        <div class="grid">
+            
+            <!-- Connection & Settings Card -->
+            <div class="card">
+                <h2><i data-lucide="settings"></i> Ulanish & Sozlamalar</h2>
+                
+                <div class="info-box">
+                    <div style="font-size:0.8rem; color:var(--text-gray);">Uzlangan Hamyon:</div>
+                    <div id="walletAddress" style="font-family:'JetBrains Mono'; font-weight:700; color:var(--accent); word-break:break-all;">Ulanmagan</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Smart-Kontrakt Adresi (Localhost yoki Sepolia)</label>
+                    <input type="text" id="contractAddress" placeholder="0x123...">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Gas Limit</label>
+                        <input type="number" id="gasLimit" value="300000">
+                    </div>
+                    <div class="form-group">
+                        <label>Gas Price (Gwei)</label>
+                        <input type="number" id="gasPrice" value="20">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interaction Card -->
+            <div class="card">
+                <h2><i data-lucide="zap"></i> Kontrakt Bilan Ishlash</h2>
+
+                <div class="action-box">
+                    <h3>1. O'qish (View Funksiya)</h3>
+                    <p>Kontraktdan ma'lumotni o'qib, konsolga va ekranga chiqarish.</p>
+                    <button class="btn btn-secondary" onclick="readContract()">
+                        <i data-lucide="eye"></i> get() funksiyasini chaqirish
+                    </button>
+                    <div class="result-box" id="readResult">Natija bu yerda ko'rinadi...</div>
+                </div>
+
+                <div class="action-box" style="margin-top:2rem;">
+                    <h3>2. Yozish (Send Tranzaksiya)</h3>
+                    <p>Kontraktga ma'lumot yuborish (Gas sozlamalari bilan).</p>
+                    <div class="form-group">
+                        <label>Yangi Qiymat (Raqam)</label>
+                        <input type="number" id="newValue" placeholder="Masalan: 42">
+                    </div>
+                    <button class="btn btn-primary" onclick="writeContract()">
+                        <i data-lucide="send"></i> set() orqali yuborish
+                    </button>
+                </div>
+
+            </div>
+        </div>
+        
+        <!-- Logs Box -->
+        <div class="logs-card">
+            <h2><i data-lucide="terminal"></i> Tizim Jurnali (Logs & Errors)</h2>
+            <div id="logs" class="logs-content">
+                <!-- Logs will appear here -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="main.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
