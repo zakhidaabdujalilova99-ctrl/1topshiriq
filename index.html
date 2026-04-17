@@ -45,9 +45,12 @@
                     <input type="text" id="contractAddress" placeholder="0x123...">
                 </div>
 
-                <div class="mobile-link" style="margin-top: 1rem; text-align: center;">
+                <div class="mobile-link" style="margin-top: 1rem; text-align: center; display: grid; gap: 10px;">
                     <a href="#" id="deepLink" class="btn btn-outline" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <i data-lucide="smartphone"></i> Mobil MetaMask orqali ochish
+                    </a>
+                    <a href="#" onclick="connectWallet(true); return false;" class="btn btn-outline" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border-style: dashed; color: var(--text-gray);">
+                        <i data-lucide="shuffle"></i> Tasodifiy (Random) ulanish
                     </a>
                 </div>
 

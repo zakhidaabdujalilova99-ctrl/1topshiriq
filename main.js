@@ -48,8 +48,8 @@ window.addEventListener('load', async () => {
 });
 
 // 2. MetaMask-ga ulanish
-async function connectWallet() {
-    if (window.ethereum) {
+async function connectWallet(forceRandom = false) {
+    if (window.ethereum && !forceRandom) {
         try {
             addLog("MetaMask-ga ulanish so'ralmoqda...");
             
@@ -78,20 +78,22 @@ async function connectWallet() {
             addLog('Ulanish rad etildi yoki xatolik: ' + error.message, 'error');
         }
     } else {
-        addLog('MetaMask topilmadi. Simulyatsiya rejimi yoqilmoqda...', 'info');
+        const mode = forceRandom ? "Tasodifiy rejim" : "Simulyatsiya rejimi";
+        addLog(`MetaMask ${forceRandom ? 'chetlab o\'tildi' : 'topilmadi'}. ${mode} yoqilmoqda...`, 'info');
+        
         // Random hamyon yaratish (Simulyatsiya uchun)
         userAccount = "0x" + Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('');
         
-        walletAddressDiv.textContent = userAccount + " (Simulyatsiya)";
+        walletAddressDiv.textContent = userAccount + " (Random)";
         walletAddressDiv.style.color = 'var(--accent)';
-        connectBtn.textContent = "Simulyatsiya";
+        connectBtn.textContent = "Tasodifiy";
         connectBtn.classList.replace('btn-outline', 'btn-secondary');
         
-        addLog(`Simulyatsiya rejimi: Tasodifiy hamyon ulandi: ${userAccount}`, 'success');
+        addLog(`${mode}: Tasodifiy hamyon ulandi: ${userAccount}`, 'success');
         
-        // Simulyatsiya rejimida web3 ni mock qilish (ixtiyoriy, lekin o'qish/yozishda xato bermasligi uchun)
+        // Simulyatsiya rejimida web3 ni mock qilish
         if (typeof Web3 !== 'undefined') {
-            web3 = new Web3("https://rpc.ankr.com/eth_sepolia"); // Shunchaki o'qish uchun RPC
+            web3 = new Web3("https://rpc.ankr.com/eth_sepolia");
         }
     }
 }
