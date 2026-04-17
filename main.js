@@ -38,6 +38,13 @@ window.addEventListener('load', async () => {
 
     // Default Sepolia contract for testing if none provided
     document.getElementById('contractAddress').value = "0xaDFcb8A9c6D45c525F1d27B1438Ae60f87cFC506"; 
+
+    // Deep link sozlash (mobil uchun)
+    const currentUrl = window.location.href.replace(/^https?:\/\//, '');
+    const deepLink = document.getElementById('deepLink');
+    if (deepLink) {
+        deepLink.href = `https://metamask.app.link/dapp/${currentUrl}`;
+    }
 });
 
 // 2. MetaMask-ga ulanish
@@ -72,7 +79,9 @@ async function connectWallet() {
         }
     } else {
         addLog('MetaMask topilmadi. Iltimos MetaMask o\'rnating!', 'error');
-        alert('MetaMask topilmadi!');
+        if (confirm('MetaMask hamyoni topilmadi. Uni o\'rnatish uchun rasmiy saytga o\'tasizmi?')) {
+            window.open('https://metamask.io/download/', '_blank');
+        }
     }
 }
 
