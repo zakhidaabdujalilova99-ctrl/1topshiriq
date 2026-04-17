@@ -78,9 +78,20 @@ async function connectWallet() {
             addLog('Ulanish rad etildi yoki xatolik: ' + error.message, 'error');
         }
     } else {
-        addLog('MetaMask topilmadi. Iltimos MetaMask o\'rnating!', 'error');
-        if (confirm('MetaMask hamyoni topilmadi. Uni o\'rnatish uchun rasmiy saytga o\'tasizmi?')) {
-            window.open('https://metamask.io/download/', '_blank');
+        addLog('MetaMask topilmadi. Simulyatsiya rejimi yoqilmoqda...', 'info');
+        // Random hamyon yaratish (Simulyatsiya uchun)
+        userAccount = "0x" + Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        
+        walletAddressDiv.textContent = userAccount + " (Simulyatsiya)";
+        walletAddressDiv.style.color = 'var(--accent)';
+        connectBtn.textContent = "Simulyatsiya";
+        connectBtn.classList.replace('btn-outline', 'btn-secondary');
+        
+        addLog(`Simulyatsiya rejimi: Tasodifiy hamyon ulandi: ${userAccount}`, 'success');
+        
+        // Simulyatsiya rejimida web3 ni mock qilish (ixtiyoriy, lekin o'qish/yozishda xato bermasligi uchun)
+        if (typeof Web3 !== 'undefined') {
+            web3 = new Web3("https://rpc.ankr.com/eth_sepolia"); // Shunchaki o'qish uchun RPC
         }
     }
 }
