@@ -37,7 +37,7 @@ window.addEventListener('load', async () => {
     }
 
     // Default Sepolia contract for testing if none provided
-    document.getElementById('contractAddress').value = "0x89D5db5F07119f18BcdA102A2fcF9cf5D20739e0"; 
+    document.getElementById('contractAddress').value = "0xaDFcb8A9c6D45c525F1d27B1438Ae60f87cFC506"; 
 });
 
 // 2. MetaMask-ga ulanish
