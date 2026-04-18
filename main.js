@@ -1,175 +1,449 @@
 let web3;
 let userAccount = null;
-let contractABI = null;
-let contractInstance = null;
+let els = {}; 
 
-const logsDiv = document.getElementById('logs');
-const connectBtn = document.getElementById('connectBtn');
-const walletAddressDiv = document.getElementById('walletAddress');
-const readResultDiv = document.getElementById('readResult');
+const gameState = {
+    tokens: 0,
+    gas: 0.050,
+    pph: 0,
+    energy: 1000,
+    maxEnergy: 1000,
+    rank: 'Bronze Miner',
+    combo: 0,
+    multiplier: 1,
+    lastClick: 0,
+    upgrades: [
+        { id: 1, name: 'Neural Processor', cost: 100, pph: 15, level: 0, icon: 'cpu' },
+        { id: 2, name: 'Quantum Core', cost: 500, pph: 85, level: 0, icon: 'zap' },
+        { id: 3, name: 'Satellite Node', cost: 2500, pph: 450, level: 0, icon: 'satellite' },
+        { id: 4, name: 'AI Server Farm', cost: 12000, pph: 2200, level: 0, icon: 'server' },
+        { id: 5, name: 'Dysons Sphere', cost: 100000, pph: 15000, level: 0, icon: 'sun' }
+    ]
+};
 
-// Add a log to the UI
-function addLog(message, type = 'info') {
-    const time = new Date().toLocaleTimeString();
-    let classStr = 'log-msg';
-    if (type === 'error') classStr = 'log-error';
-    if (type === 'success') classStr = 'log-success';
-
-    const p = document.createElement('div');
-    p.className = 'log-entry';
-    p.innerHTML = `<span class="log-time">[${time}]</span> <span class="${classStr}">${message}</span>`;
-    
-    logsDiv.prepend(p);
-    console.log(`[${time}] ${type.toUpperCase()}: ${message}`);
-}
-
-// 1. Kutubxonani va ABI ni yuklash
-window.addEventListener('load', async () => {
-    addLog('DApp yuklanmoqda... Web3.js ' + typeof Web3 !== 'undefined' ? 'Topildi' : 'Topilmadi!');
-    
+window.addEventListener('load', function() {
     try {
-        // ABI faylini yuklab olish
-        const response = await fetch('contractABI.json');
-        contractABI = await response.json();
-        addLog('Smart-kontrakt ABI fayli muvaffaqiyatli yuklandi.', 'success');
-    } catch (e) {
-        addLog('ABI faylini yuklashda xatolik: ' + e.message, 'error');
-    }
+        console.log("Initializing Cyber Clicker...");
+        
+        // Map elements
+        els = {
+            tokenBalance: document.getElementById('tokenBalance'),
+            gasBalance: document.getElementById('gasBalance'),
+            pphValue: document.getElementById('pphValue'),
+            energyValue: document.getElementById('energyValue'),
+            energyBar: document.getElementById('energyBar'),
+            clickBtn: document.getElementById('clickBtn'),
+            upgradeList: document.getElementById('upgradeList'),
+            walletAddress: document.getElementById('walletAddress'),
+            walletShort: document.getElementById('walletShort'),
+            userRank: document.getElementById('userRank'),
+            comboText: document.getElementById('comboText'),
+            logs: document.getElementById('logs')
+        };
 
-    // Default Sepolia contract for testing if none provided
-    document.getElementById('contractAddress').value = "0xaDFcb8A9c6D45c525F1d27B1438Ae60f87cFC506"; 
+        if (els.clickBtn) {
+            els.clickBtn.addEventListener('click', handleTap);
+        }
 
-    // Deep link sozlash (mobil uchun)
-    const currentUrl = window.location.href.replace(/^https?:\/\//, '');
-    const deepLink = document.getElementById('deepLink');
-    if (deepLink) {
-        deepLink.href = `https://metamask.app.link/dapp/${currentUrl}`;
+        renderUpgrades();
+        startLoops();
+        updateUI();
+        addLog("SYSTEM ONLINE. ALL MODULES FUNCTIONAL.", "success");
+        
+        if (window.lucide) lucide.createIcons();
+    } catch (err) {
+        console.error("Initialization Error:", err);
+        alert("O'yinni yuklashda xatolik yuz berdi. Iltimos, sahifani yangilang.");
     }
 });
 
-// 2. MetaMask-ga ulanish
-async function connectWallet(forceRandom = false) {
-    if (window.ethereum && !forceRandom) {
-        try {
-            addLog("MetaMask-ga ulanish so'ralmoqda...");
-            
-            // Web3 obyektini yaratish
-            web3 = new Web3(window.ethereum);
-            
-            // Foydalanuvchidan ruxsat so'rash
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            userAccount = accounts[0];
-            
-            walletAddressDiv.textContent = userAccount;
-            walletAddressDiv.style.color = 'var(--success)';
-            connectBtn.textContent = "Ulangan";
-            connectBtn.classList.replace('btn-outline', 'btn-secondary');
-            
-            addLog(`Muvaffaqiyatli ulandi! Hamyon: ${userAccount}`, 'success');
+function addLog(msg, type) {
+    if (!els.logs) return;
+    const entry = document.createElement('div');
+    entry.style.color = type === 'success' ? '#00ff88' : (type === 'error' ? '#ff4d4d' : 'rgba(255,255,255,0.4)');
+    entry.style.marginBottom = '10px';
+    entry.innerHTML = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    els.logs.prepend(entry);
+}
 
-            // Tarmoq o'zgarsa yoki akkaunt o'zgarsa
-            window.ethereum.on('accountsChanged', (acts) => {
-                userAccount = acts[0];
-                walletAddressDiv.textContent = userAccount;
-                addLog('Akkaunt o\'zgartirildi: ' + userAccount);
-            });
+function updateUI() {
+    try {
+        if (els.tokenBalance) els.tokenBalance.textContent = Math.floor(gameState.tokens).toLocaleString();
+        if (els.gasBalance) els.gasBalance.textContent = gameState.gas.toFixed(3) + " ETH";
+        if (els.pphValue) els.pphValue.textContent = "+" + gameState.pph.toLocaleString() + " / HR";
+        if (els.energyValue) els.energyValue.textContent = Math.floor(gameState.energy);
+        if (els.energyBar) els.energyBar.style.width = (gameState.energy / gameState.maxEnergy * 100) + '%';
+        
+        updateRank();
+        if (els.userRank) els.userRank.textContent = gameState.rank;
 
-        } catch (error) {
-            addLog('Ulanish rad etildi yoki xatolik: ' + error.message, 'error');
+        if (gameState.tokens >= 100) {
+            const modal = document.getElementById('restModal');
+            if (modal) modal.classList.add('active');
+        }
+    } catch (e) {}
+}
+
+function handleTap(e) {
+    if (gameState.energy < 1) return;
+    
+    const now = Date.now();
+    const diff = now - gameState.lastClick;
+    gameState.lastClick = now;
+
+    if (diff < 300) {
+        gameState.combo++;
+        if (gameState.combo > 10) {
+            gameState.multiplier = 2;
+            if (els.comboText) els.comboText.classList.add('active');
+            triggerShake();
         }
     } else {
-        const mode = forceRandom ? "Tasodifiy rejim" : "Simulyatsiya rejimi";
-        addLog(`MetaMask ${forceRandom ? 'chetlab o\'tildi' : 'topilmadi'}. ${mode} yoqilmoqda...`, 'info');
-        
-        // Random hamyon yaratish (Simulyatsiya uchun)
-        userAccount = "0x" + Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-        
-        walletAddressDiv.textContent = userAccount + " (Random)";
-        walletAddressDiv.style.color = 'var(--accent)';
-        connectBtn.textContent = "Tasodifiy";
-        connectBtn.classList.replace('btn-outline', 'btn-secondary');
-        
-        addLog(`${mode}: Tasodifiy hamyon ulandi: ${userAccount}`, 'success');
-        
-        // Simulyatsiya rejimida web3 ni mock qilish
-        if (typeof Web3 !== 'undefined') {
-            web3 = new Web3("https://rpc.ankr.com/eth_sepolia");
-        }
+        gameState.combo = 0;
+        gameState.multiplier = 1;
+        if (els.comboText) els.comboText.classList.remove('active');
     }
-}
 
-// Kontrakt obyektini yaratish funksiyasi
-function getContract() {
-    const address = document.getElementById('contractAddress').value.trim();
-    if (!web3) {
-        throw new Error("Oldin MetaMask-ga ulaning!");
-    }
-    if (!address) {
-        throw new Error("Kontrakt adresini kiriting!");
-    }
-    if (!contractABI) {
-        throw new Error("ABI yuklanmagan!");
-    }
+    const rect = els.clickBtn ? els.clickBtn.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
+    const x = (e && e.clientX) || (rect.left + rect.width / 2);
+    const y = (e && e.clientY) || (rect.top + rect.height / 2);
     
-    // contract obyektini yaratish
-    return new web3.eth.Contract(contractABI, address);
+    createParticle(x, y, "+" + (1 * gameState.multiplier));
+
+    gameState.tokens += (1 * gameState.multiplier);
+    gameState.energy -= 1;
+    updateUI();
 }
 
-// 3. View funksiyani chaqirish (O'qish)
-async function readContract() {
-    try {
-        readResultDiv.textContent = 'Yuklanmoqda...';
-        const contract = getContract();
-        
-        addLog("Kontraktdan ma'lumot o'qish (call) boshlandi...");
-        
-        // view metodni chaqirish (get)
-        const result = await contract.methods.get().call();
-        
-        readResultDiv.textContent = result.toString();
-        addLog(`O'qish muvaffaqiyatli! Natija: ${result}`, 'success');
-        
-    } catch (error) {
-        readResultDiv.textContent = 'Xatolik yuz berdi';
-        addLog('O\'qishda xatolik (Error handling): ' + error.message, 'error');
+function createParticle(x, y, text) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+    p.textContent = text;
+    document.body.appendChild(p);
+    setTimeout(function() { p.remove(); }, 1000);
+}
+
+function triggerShake() {
+    const app = document.querySelector('.app-container');
+    if (app) {
+        app.style.transform = 'translate(' + (Math.random() * 4 - 2) + 'px, ' + (Math.random() * 4 - 2) + 'px)';
+        setTimeout(function() { app.style.transform = 'none'; }, 50);
     }
 }
 
-// 4. Send tranzaksiyasi (Yozish)
-async function writeContract() {
-    try {
-        const contract = getContract();
-        const value = document.getElementById('newValue').value;
-        const gasLimit = document.getElementById('gasLimit').value;
-        const gasPriceGwei = document.getElementById('gasPrice').value;
-        
-        if (!value) throw new Error("Yangi qiymatni kiriting!");
-        
-        // Gwei ni wei ga o'tkazish
-        const gasPriceWei = web3.utils.toWei(gasPriceGwei.toString(), 'gwei');
+function startLoops() {
+    setInterval(function() {
+        gameState.tokens += (gameState.pph / 3600);
+        updateUI();
+    }, 1000);
 
-        addLog(`Tranzaksiya tayyorlanmoqda... (Qiymat: ${value})`);
-        addLog(`* Gas Limit: ${gasLimit}`);
-        addLog(`* Gas Price: ${gasPriceGwei} gwei`);
-        
-        // send metodini chaqirish
-        const tx = await contract.methods.set(value).send({
-            from: userAccount,
-            gas: gasLimit,
-            gasPrice: gasPriceWei
-        });
-        
-        addLog(`Tranzaksiya muvaffaqiyatli tasdiqlandi! Tx Hash: ${tx.transactionHash}`, 'success');
-        
-        // Yangilanganini ko'rish uchun o'qishni ishga tushirish
-        readContract();
-
-    } catch (error) {
-        // Foydalanuvchiga xatolikni chiqarish mexanizmi
-        if(error.code === 4001) {
-            addLog("Foydalanuvchi tranzaksiyani bekor qildi (User Rejected).", 'error');
-        } else {
-            addLog("Tranzaksiyani yuborishda xatolik: " + error.message, 'error');
+    setInterval(function() {
+        if (gameState.energy < gameState.maxEnergy) {
+            gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + 5);
+            updateUI();
         }
+    }, 1000);
+}
+
+function renderUpgrades() {
+    if (!els.upgradeList) return;
+    els.upgradeList.innerHTML = '';
+    gameState.upgrades.forEach(function(u) {
+        const div = document.createElement('div');
+        div.className = 'upgrade-card';
+        div.innerHTML = '<div class="upgrade-info">' +
+            '<div style="display:flex; align-items:center; gap:12px;">' +
+            '<i data-lucide="' + u.icon + '" style="color:var(--primary); width:24px;"></i>' +
+            '<h3>' + u.name + '</h3>' +
+            '</div>' +
+            '<p>Level ' + u.level + ' • <span style="color:#00ff88">+' + u.pph + ' /hr</span></p>' +
+            '</div>' +
+            '<button class="price-tag" onclick="buyUpgrade(' + u.id + ')">' +
+            u.cost.toLocaleString() +
+            '</button>';
+        els.upgradeList.appendChild(div);
+    });
+    if (window.lucide) lucide.createIcons();
+}
+
+function buyUpgrade(id) {
+    const u = gameState.upgrades.find(function(up) { return up.id === id; });
+    if (gameState.tokens >= u.cost) {
+        gameState.tokens -= u.cost;
+        u.level++;
+        gameState.pph += u.pph;
+        u.cost = Math.floor(u.cost * 1.7);
+        addLog("UPGRADE SUCCESS: " + u.name, "success");
+        renderUpgrades();
+        updateUI();
+    } else {
+        addLog("INSUFFICIENT CREDITS.", "error");
     }
 }
+
+function switchView(id, el) {
+    document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+    document.querySelectorAll('.dock-item').forEach(function(d) { d.classList.remove('active'); });
+    
+    const target = document.getElementById('view-' + id);
+    if (target) target.classList.add('active');
+    
+    if (el) el.classList.add('active');
+}
+
+function updateRank() {
+    const t = gameState.tokens;
+    if (t > 1000000) gameState.rank = 'Diamond Overlord';
+    else if (t > 100000) gameState.rank = 'Platinum Archon';
+    else if (t > 25000) gameState.rank = 'Gold Master';
+    else if (t > 5000) gameState.rank = 'Silver Tech';
+}
+
+function resetGame() {
+    gameState.tokens = 0;
+    gameState.pph = 0;
+    gameState.energy = 1000;
+    gameState.rank = 'Bronze Miner';
+    gameState.combo = 0;
+    gameState.multiplier = 1;
+    gameState.upgrades.forEach(function(u) {
+        u.level = 0;
+        if (u.id === 1) u.cost = 100;
+        if (u.id === 2) u.cost = 500;
+        if (u.id === 3) u.cost = 2500;
+        if (u.id === 4) u.cost = 12000;
+        if (u.id === 5) u.cost = 100000;
+    });
+    const modal = document.getElementById('restModal');
+    if (modal) modal.classList.remove('active');
+    renderUpgrades();
+    updateUI();
+    addLog("GAME RESTARTED.", "success");
+}
+
+function simulateAirdrop() {
+    addLog("INITIATING AIRDROP...", "success");
+    setTimeout(function() {
+        gameState.tokens += 500;
+        addLog("AIRDROP SECURED: +500 GLX", "success");
+        updateUI();
+    }, 1500);
+}
+
+async function connectWallet() {
+    if (window.ethereum) {
+        try {
+            web3 = new Web3(window.ethereum);
+            const acts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            userAccount = acts[0];
+            if (els.walletAddress) els.walletAddress.textContent = userAccount;
+            if (els.walletShort) els.walletShort.textContent = userAccount.slice(0, 8).toUpperCase();
+            addLog("CONNECTED: " + userAccount, "success");
+        } catch (e) {
+            addLog("CONNECTION DENIED.", "error");
+        }
+    } else {
+        userAccount = "0x" + Math.random().toString(16).slice(2, 10);
+        if (els.walletAddress) els.walletAddress.textContent = userAccount + "... (DEMO)";
+        if (els.walletShort) els.walletShort.textContent = "DEMO_MODE";
+        addLog("DEMO MODE ACTIVE.", "success");
+    }
+}
+
+function resetGame() {
+    gameState.tokens = 0;
+    gameState.pph = 0;
+    gameState.energy = 1000;
+    gameState.rank = 'Bronze Miner';
+    gameState.combo = 0;
+    gameState.multiplier = 1;
+    
+    // Reset Upgrades
+    gameState.upgrades.forEach(u => {
+        u.level = 0;
+        // Reset costs to original (approximate logic based on current config)
+        if (u.id === 1) u.cost = 100;
+        if (u.id === 2) u.cost = 500;
+        if (u.id === 3) u.cost = 2500;
+        if (u.id === 4) u.cost = 12000;
+        if (u.id === 5) u.cost = 100000;
+    });
+
+    document.getElementById('restModal').classList.remove('active');
+    renderUpgrades();
+    updateUI();
+    addLog("O'yin yangidan boshlandi. Omad!", 'success');
+}
+
+function updateRank() {
+    const t = gameState.tokens;
+    if (t > 1000000) gameState.rank = 'Diamond Overlord';
+    else if (t > 100000) gameState.rank = 'Platinum Archon';
+    else if (t > 25000) gameState.rank = 'Gold Master';
+    else if (t > 5000) gameState.rank = 'Silver Tech';
+}
+
+// TAP LOGIC
+els.clickBtn.addEventListener('click', (e) => {
+    if (gameState.energy < 1) return;
+    
+    const now = Date.now();
+    const diff = now - gameState.lastClick;
+    gameState.lastClick = now;
+
+    // Combo Logic
+    if (diff < 300) {
+        gameState.combo++;
+        if (gameState.combo > 10) {
+            gameState.multiplier = 2;
+            els.comboText.classList.add('active');
+            triggerShake();
+        }
+    } else {
+        gameState.combo = 0;
+        gameState.multiplier = 1;
+        els.comboText.classList.remove('active');
+    }
+
+    // Effects
+    const rect = els.clickBtn.getBoundingClientRect();
+    const x = e.clientX || (rect.left + rect.width / 2);
+    const y = e.clientY || (rect.top + rect.height / 2);
+    createParticle(x, y, `+${1 * gameState.multiplier}`);
+
+    // State
+    gameState.tokens += (1 * gameState.multiplier);
+    gameState.energy -= 1;
+    updateUI();
+});
+
+function createParticle(x, y, text) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = `${x}px`;
+    p.style.top = `${y}px`;
+    p.textContent = text;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+}
+
+function triggerShake() {
+    const app = document.querySelector('.app-container');
+    app.style.transform = `translate(${Math.random() * 4 - 2}px, ${Math.random() * 4 - 2}px)`;
+    setTimeout(() => app.style.transform = 'none', 50);
+}
+
+// GAME LOOPS
+function startLoops() {
+    setInterval(() => {
+        gameState.tokens += (gameState.pph / 3600);
+        updateUI();
+    }, 1000);
+
+    setInterval(() => {
+        if (gameState.energy < gameState.maxEnergy) {
+            gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + 5);
+            updateUI();
+        }
+    }, 1000);
+}
+
+// UPGRADES
+function renderUpgrades() {
+    els.upgradeList.innerHTML = '';
+    gameState.upgrades.forEach(u => {
+        const div = document.createElement('div');
+        div.className = 'upgrade-card';
+        div.innerHTML = `
+            <div class="upgrade-info">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <i data-lucide="${u.icon}" style="color:var(--primary); width:24px;"></i>
+                    <h3>${u.name}</h3>
+                </div>
+                <p>Level ${u.level} • <span style="color:#00ff88">+${u.pph} /hr</span></p>
+            </div>
+            <button class="price-tag" onclick="buyUpgrade(${u.id})">
+                ${u.cost.toLocaleString()}
+            </button>
+        `;
+        els.upgradeList.appendChild(div);
+    });
+    if (window.lucide) lucide.createIcons();
+}
+
+function buyUpgrade(id) {
+    const u = gameState.upgrades.find(up => up.id === id);
+    if (gameState.tokens >= u.cost) {
+        gameState.tokens -= u.cost;
+        u.level++;
+        gameState.pph += u.pph;
+        u.cost = Math.floor(u.cost * 1.7);
+        addLog(`UPGRADE SUCCESS: ${u.name} LVL ${u.level}`, 'success');
+        renderUpgrades();
+        updateUI();
+    } else {
+        addLog("INSUFFICIENT CREDITS FOR UPGRADE.", 'error');
+    }
+}
+
+// NAVIGATION
+function switchView(id, el) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.dock-item').forEach(d => d.classList.remove('active'));
+    
+    const targetView = document.getElementById(`view-${id}`);
+    if (targetView) targetView.classList.add('active');
+    
+    if (el) {
+        el.classList.add('active');
+    } else {
+        // Fallback for initial load or programmatic calls
+        const navItems = document.querySelectorAll('.dock-item');
+        if (id === 'mine') navItems[0].classList.add('active');
+        if (id === 'upgrades') navItems[1].classList.add('active');
+        if (id === 'web3') navItems[2].classList.add('active');
+    }
+}
+
+// WEB3
+async function connectWallet() {
+    if (window.ethereum) {
+        try {
+            web3 = new Web3(window.ethereum);
+            const acts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            userAccount = acts[0];
+            els.walletAddress.textContent = userAccount;
+            els.walletShort.textContent = userAccount.slice(0, 8).toUpperCase();
+            addLog("AUTHORIZED: " + userAccount, 'success');
+        } catch (e) {
+            addLog("AUTHORIZATION REJECTED.", 'error');
+        }
+    } else {
+        userAccount = "0x" + Math.random().toString(16).slice(2, 42);
+        els.walletAddress.textContent = userAccount + " (SIMULATED)";
+        els.walletShort.textContent = "GUEST_USER";
+        addLog("RUNNING IN SIMULATION MODE.", 'success');
+    }
+}
+
+function simulateAirdrop() {
+    addLog("INITIATING AIRDROP PROTOCOL...", 'success');
+    let count = 0;
+    const interval = setInterval(() => {
+        addLog(`DECRYPTING BLOCK ${Math.floor(Math.random()*999)}...`);
+        count++;
+        if (count > 3) {
+            clearInterval(interval);
+            const reward = 500;
+            gameState.tokens += reward;
+            addLog(`AIRDROP SECURED: +${reward} GLX!`, 'success');
+            updateUI();
+        }
+    }, 800);
+}
+
+
+
+

@@ -2,110 +2,128 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web3.js Integration | 1-Topshiriq</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cyber Clicker | Masterpiece Edition</title>
     <!-- Web3.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/web3@4.8.0/dist/web3.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <nav>
-        <div class="logo">
-            <i data-lucide="boxes"></i> Web3<span>DApp</span>
-        </div>
-        <button id="connectBtn" class="btn btn-outline" onclick="connectWallet()">
-            Hamyonni Ulash
-        </button>
-    </nav>
-
-    <div class="container">
-        
-        <div class="header-section">
-            <h1>Web3.js va MetaMask bilan ishlash</h1>
-            <p>Ushbu loyiha orqali siz Localhost tarmog'ini MetaMask-ga qanday ulashni va smart-kontrakt bilan <code>view</code> va <code>send</code> metodlarida ishlashni ko'rib chiqasiz.</p>
-        </div>
-
-        <div class="grid">
+    <div class="app-container">
+        <!-- Ultra Premium Header -->
+        <header>
+            <div class="header-top">
+                <div class="badge">
+                    <i data-lucide="award" style="color:var(--gold); width:16px;"></i>
+                    <span class="rank-title" id="userRank">Bronze Miner</span>
+                </div>
+                <button class="badge" style="cursor:pointer;" onclick="connectWallet()">
+                    <i data-lucide="shield-check" style="width:16px; color:var(--primary);"></i>
+                    <span id="walletShort" style="font-size: 0.7rem; font-weight: 800;">Connect Web3</span>
+                </button>
+            </div>
             
-            <!-- Connection & Settings Card -->
-            <div class="card">
-                <h2><i data-lucide="settings"></i> Ulanish & Sozlamalar</h2>
-                
-                <div class="info-box">
-                    <div style="font-size:0.8rem; color:var(--text-gray);">Uzlangan Hamyon:</div>
-                    <div id="walletAddress" style="font-family:'JetBrains Mono'; font-weight:700; color:var(--accent); word-break:break-all;">Ulanmagan</div>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Profit / Hour</div>
+                    <div class="stat-value" id="pphValue">+0 GLX</div>
                 </div>
-
-                <div class="form-group">
-                    <label>Smart-Kontrakt Adresi (Localhost yoki Sepolia)</label>
-                    <input type="text" id="contractAddress" placeholder="0x123...">
-                </div>
-
-                <div class="mobile-link" style="margin-top: 1rem; text-align: center; display: grid; gap: 10px;">
-                    <a href="#" id="deepLink" class="btn btn-outline" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <i data-lucide="smartphone"></i> Mobil MetaMask orqali ochish
-                    </a>
-                    <a href="#" onclick="connectWallet(true); return false;" class="btn btn-outline" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border-style: dashed; color: var(--text-gray);">
-                        <i data-lucide="shuffle"></i> Tasodifiy (Random) ulanish
-                    </a>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Gas Limit</label>
-                        <input type="number" id="gasLimit" value="300000">
-                    </div>
-                    <div class="form-group">
-                        <label>Gas Price (Gwei)</label>
-                        <input type="number" id="gasPrice" value="20">
-                    </div>
+                <div class="stat-item">
+                    <div class="stat-label">Gas Energy</div>
+                    <div class="stat-value" style="color:var(--secondary);" id="gasBalance">0.050 ETH</div>
                 </div>
             </div>
+        </header>
 
-            <!-- Interaction Card -->
-            <div class="card">
-                <h2><i data-lucide="zap"></i> Kontrakt Bilan Ishlash</h2>
-
-                <div class="action-box">
-                    <h3>1. O'qish (View Funksiya)</h3>
-                    <p>Kontraktdan ma'lumotni o'qib, konsolga va ekranga chiqarish.</p>
-                    <button class="btn btn-secondary" onclick="readContract()">
-                        <i data-lucide="eye"></i> get() funksiyasini chaqirish
-                    </button>
-                    <div class="result-box" id="readResult">Natija bu yerda ko'rinadi...</div>
-                </div>
-
-                <div class="action-box" style="margin-top:2rem;">
-                    <h3>2. Yozish (Send Tranzaksiya)</h3>
-                    <p>Kontraktga ma'lumot yuborish (Gas sozlamalari bilan).</p>
-                    <div class="form-group">
-                        <label>Yangi Qiymat (Raqam)</label>
-                        <input type="number" id="newValue" placeholder="Masalan: 42">
-                    </div>
-                    <button class="btn btn-primary" onclick="writeContract()">
-                        <i data-lucide="send"></i> set() orqali yuborish
-                    </button>
-                </div>
-
-            </div>
-        </div>
+        <!-- VIEWS -->
         
-        <!-- Logs Box -->
-        <div class="logs-card">
-            <h2><i data-lucide="terminal"></i> Tizim Jurnali (Logs & Errors)</h2>
-            <div id="logs" class="logs-content">
-                <!-- Logs will appear here -->
+        <!-- MAIN CLICKER VIEW -->
+        <div id="view-mine" class="view active">
+            <div class="score-section">
+                <div id="tokenBalance" class="score-main">0</div>
+                <p style="color:var(--text-dim); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;">Global Credits</p>
+            </div>
+
+            <div class="clicker-zone">
+                <div class="coin-btn" id="clickBtn"></div>
+                <div class="combo-indicator" id="comboText">COMBO X2!</div>
+
+                <div class="energy-meta" style="margin-top: 40px;">
+                    <span>RESERVE POWER</span>
+                    <span><span id="energyValue">1000</span> / 1000</span>
+                </div>
+                <div class="track">
+                    <div id="energyBar" class="fill"></div>
+                </div>
             </div>
         </div>
 
+        <!-- BOOSTS VIEW -->
+        <div id="view-upgrades" class="view">
+            <h2 style="margin-bottom: 30px; font-weight: 900; letter-spacing: -2px; font-size: 2rem;">BOOSTS</h2>
+            <div id="upgradeList">
+                <!-- Advanced Upgrades -->
+            </div>
+        </div>
+
+        <!-- WEB3 VIEW -->
+        <div id="view-web3" class="view">
+            <h2 style="margin-bottom: 30px; font-weight: 900; letter-spacing: -2px; font-size: 2rem;">NETWORK</h2>
+            <div class="upgrade-card" style="display:block;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                    <span style="font-size: 0.8rem; font-weight: 900; color:var(--primary);">NODE ADDRESS</span>
+                    <span style="font-size: 0.65rem; padding: 4px 10px; background:rgba(0,255,136,0.1); color:#00ff88; border-radius:10px;">ONLINE</span>
+                </div>
+                <p id="walletAddress" style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color:var(--text-dim); word-break: break-all;">Disconnected</p>
+            </div>
+
+            <div class="upgrade-card" style="display:block;">
+                <p style="font-size: 0.75rem; font-weight: 900; margin-bottom: 15px; color:var(--text-dim);">TX STREAM</p>
+                <div id="logs" style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 20px; height: 200px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;"></div>
+            </div>
+
+            <button class="price-tag" style="width:100%; margin-top: 10px;" onclick="simulateAirdrop()">
+                CLAIM AIRDROP
+            </button>
+        </div>
+
+        <!-- MASTER DOCK -->
+        <nav class="dock">
+            <div class="dock-item active" onclick="switchView('mine', this)">
+                <i data-lucide="layout-grid"></i>
+                <span>Mine</span>
+            </div>
+            <div class="dock-item" onclick="switchView('upgrades', this)">
+                <i data-lucide="zap"></i>
+                <span>Boosts</span>
+            </div>
+            <div class="dock-item" onclick="switchView('web3', this)">
+                <i data-lucide="database"></i>
+                <span>Web3</span>
+            </div>
+        </nav>
+
+        <!-- REST MODAL -->
+        <div id="restModal" class="modal-overlay">
+            <div class="modal-content">
+                <i data-lucide="coffee" style="width:60px; height:60px; color:var(--primary); margin-bottom: 20px;"></i>
+                <h2 style="font-size: 2rem; margin-bottom: 10px;">Vaqt Keldi!</h2>
+                <p style="color:var(--text-dim); margin-bottom: 30px;">Siz 100 GLX yig'dingiz. Endi biroz dam oling va o'yinni yangidan boshlang.</p>
+                <button class="price-tag" style="width:100%;" onclick="resetGame()">
+                    YANGIDAN BOSHLASH
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Scripts -->
     <script src="main.js"></script>
     <script>lucide.createIcons();</script>
 </body>
 </html>
+
+
+
+
